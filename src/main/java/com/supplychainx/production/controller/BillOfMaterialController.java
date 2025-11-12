@@ -1,0 +1,100 @@
+package com.supplychainx.production.controller;
+
+import com.supplychainx.common.enums.UserRole;
+import com.supplychainx.production.dto.BillOfMaterialRequestDTO;
+import com.supplychainx.production.dto.BillOfMaterialResponseDTO;
+import com.supplychainx.production.service.BillOfMaterialService;
+import com.supplychainx.security.RequiresRole;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * Controller REST pour gérer les nomenclatures (BOM - Bill of Materials)
+ * Permet d'associer des matières premières aux produits finis
+ * Support pour US28: Vérification de disponibilité des matières avant production
+ */
+@RestController
+@RequestMapping("/api/bom")
+@RequiredArgsConstructor
+@Tag(name = "Nomenclatures (BOM)", description = "Gestion des nomenclatures - Association produits/matières premières")
+public class BillOfMaterialController {
+
+    private final BillOfMaterialService billOfMaterialService;
+
+    /**
+     * Ajouter une ligne de nomenclature (associer une matière à un produit)
+     * Rôle: CHEF_PRODUCTION
+     */
+    @PostMapping
+    @RequiresRole(UserRole.CHEF_PRODUCTION)
+    @Operation(summary = "Créer une nomenclature", 
+               description = "Associer une matière première à un produit fini avec sa quantité nécessaire")
+    public ResponseEntity<BillOfMaterialResponseDTO> createBillOfMaterial(
+            @Valid @RequestBody BillOfMaterialRequestDTO dto) {
+        BillOfMaterialResponseDTO created = billOfMaterialService.createBillOfMaterial(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    /**
+     * Modifier une ligne de nomenclature existante
+     * Rôle: CHEF_PRODUCTION
+     */
+    @PutMapping("/{id}")
+    @RequiresRole(UserRole.CHEF_PRODUCTION)
+    @Operation(summary = "Modifier une nomenclature", 
+               description = "Modifier la quantité ou les associations d'une nomenclature existante")
+    public ResponseEntity<BillOfMaterialResponseDTO> updateBillOfMaterial(
+            @PathVariable Long id,
+            @Valid @RequestBody BillOfMaterialRequestDTO dto) {
+        BillOfMaterialResponseDTO updated = billOfMaterialService.updateBillOfMaterial(id, dto);
+        return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * Supprimer une ligne de nomenclature
+     * Rôle: CHEF_PRODUCTION
+     */
+    @DeleteMapping("/{id}")
+    @RequiresRole(UserRole.CHEF_PRODUCTION)
+    @Operation(summary = "Supprimer une nomenclature", 
+               description = "Retirer une matière première de la nomenclature d'un produit")
+    public ResponseEntity<Void> deleteBillOfMaterial(@PathVariable Long id) {
+        billOfMaterialService.deleteBillOfMaterial(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Consulter toutes les nomenclatures
+     * Rôle: PLANIFICATEUR ou SUPERVISEUR_PRODUCTION
+     */
+    @GetMapping
+    @RequiresRole({UserRole.PLANIFICATEUR, UserRole.SUPERVISEUR_PRODUCTION})
+    @Operation(summary = "Consulter toutes les nomenclatures", 
+               description = "Liste complète de toutes les associations produits/matières")
+    public ResponseEntity<List<BillOfMaterialResponseDTO>> getAllBillOfMaterials() {
+        List<BillOfMaterialResponseDTO> boms = billOfMaterialService.getAllBillOfMaterials();
+        return ResponseEntity.ok(boms);
+    }
+
+    /**
+     * Consulter la nomenclature (BOM) d'un produit spécifique
+     * Support pour US28: Permet au planificateur de voir les matières nécessaires
+     * Rôle: PLANIFICATEUR ou SUPERVISEUR_PRODUCTION
+     */
+    @GetMapping("/product/{productId}")
+    @RequiresRole({UserRole.PLANIFICATEUR, UserRole.SUPERVISEUR_PRODUCTION})
+    @Operation(summary = "Consulter la BOM d'un produit", 
+               description = "US28 Support: Liste des matières premières nécessaires pour fabriquer un produit")
+    public ResponseEntity<List<BillOfMaterialResponseDTO>> getBillOfMaterialsByProduct(
+            @PathVariable Long productId) {
+        List<BillOfMaterialResponseDTO> boms = billOfMaterialService.getBillOfMaterialsByProduct(productId);
+        return ResponseEntity.ok(boms);
+    }
+}
