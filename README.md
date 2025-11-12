@@ -91,16 +91,3 @@ src/main/java/com/supplychainx/
 - **Lombok** (Simplifier le code)
 
 ---
-
-## ❓ Problèmes ?
-
-**Erreur de connexion MySQL ?**
-→ Vérifiez que MySQL est démarré et que le mot de passe est correct dans `application.properties`
-
-**L'application ne démarre pas ?**
-→ Regardez les messages d'erreur dans la console
-
----
-
-**Bon courage ! 🎉**
-
